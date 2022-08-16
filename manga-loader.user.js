@@ -2133,9 +2133,9 @@ var getViewer = function(prevChapter, nextChapter) {
   }, true);
   UI.images.addEventListener('click', function(evt) {
     if ((evt.target.nodeName === 'DIV' || evt.target.nodeName === 'IMG') && evt.button === 0) {
-        var pWidth = window.innerWidth();
-        var pOffset = window.offset();
-        var x = evt.pageX - pOffset.left;
+        var pWidth = window.innerWidth;
+        var pOffset = window.pageXOffset;
+        var x = evt.pageX - pOffset;
         if(pWidth/5*2 > x){
           goToPage('previous');
         } else if(pWidth/5*3 < x) {
