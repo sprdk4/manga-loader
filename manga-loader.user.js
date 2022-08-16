@@ -2023,7 +2023,7 @@ var getViewer = function(prevChapter, nextChapter) {
       return;
     }
     if((action === '+' && zoom > 100) || zoomToFit) {
-      zoom = Math.min(window.innerHeight / curImage.offsetHeight, window.innerWidth / curImage.offsetWidth) * 100;
+      zoom = lastZoom/100.0 * Math.min(window.innerHeight / curImage.scrollHeight, window.innerWidth / curImage.scrollWidth) * 100;
       zoomToFit = true;
     } else {
       zoom = Math.max(10, Math.min(zoom, 100));
