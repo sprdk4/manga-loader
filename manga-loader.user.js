@@ -242,7 +242,7 @@ var implementations = [{
   prevchap: '.pager-list-left > a:first-child',
   imgURLs: [],
   pages: function(url, num, cb, ex) {
-    var imp = this;    
+    var imp = this;
     if (this.imgURLs[num])
       cb(this.imgURLs[num], num);
     else
@@ -259,7 +259,7 @@ var implementations = [{
   },
   wait: function () {
     el = getEl('.reader-main img');
-    
+
     return el && el.getAttribute('src') != el.getAttribute('data-loading-img');
   }
 }, {
@@ -2004,8 +2004,8 @@ var getViewer = function(prevChapter, nextChapter) {
     }
   });
   // zoom
-  var lastZoom, originalZoom,newZoomPostion;
-  var changeZoom = function(action, elem, zoomToFit = false) {
+  var lastZoom, originalZoom,newZoomPostion, zoomToFit = false;
+  var changeZoom = function(action, elem) {
     var ratioZoom = (document.documentElement.scrollTop || document.body.scrollTop)/(document.documentElement.scrollHeight || document.body.scrollHeight);
     var curImage = getCurrentImage();
     if(!lastZoom) {
@@ -2022,7 +2022,8 @@ var getViewer = function(prevChapter, nextChapter) {
       window.scroll(0, newZoomPostion);
       return;
     }
-    if((action === '+' && zoom > 100) || zoomToFit) {
+    zoomToFit = false;
+    if(action === 'fit') {
       zoom = lastZoom/100.0 * Math.min(window.innerHeight / curImage.scrollHeight, window.innerWidth / curImage.scrollWidth) * 100;
       zoomToFit = true;
     } else {
@@ -2059,6 +2060,25 @@ var getViewer = function(prevChapter, nextChapter) {
         var verifyId = getCurrentImage().id;
         if (curId == verifyId) {
           nextPage.parentElement.scrollIntoView();
+        }
+        // if currently zoom to fit window, ensure next page is also zoomed to fit to window
+        if(zoomToFit) {
+            setTimeout(() => {
+                changeZoom('fit',null);
+                nextPage.scrollIntoView();
+                var verifyId = getCurrentImage().id;
+                if (curId == verifyId) {
+                    nextPage.parentElement.scrollIntoView();
+                }
+                setTimeout(() => {
+                    changeZoom('fit',null);
+                    nextPage.scrollIntoView();
+                    var verifyId = getCurrentImage().id;
+                    if (curId == verifyId) {
+                        nextPage.parentElement.scrollIntoView();
+                    }
+                }, 5);
+            }, 10);
         }
   	}
   }
@@ -2138,10 +2158,35 @@ var getViewer = function(prevChapter, nextChapter) {
         var x = evt.pageX - pOffset;
         if(pWidth/5*2 > x){
           goToPage('previous');
+          evt.preventDefault();
         } else if(pWidth/5*3 < x) {
           goToPage('next');
+          evt.preventDefault();
+        } else if(evt.detail === 1){
+          changeZoom('fit',null);
+          setTimeout(() => { changeZoom('fit',null); }, 20);
+        }
+    }
+  });
+  UI.images.addEventListener('dblclick', function(evt) {
+    if (evt.button === 0) {
+        var pWidth = window.innerWidth;
+        var pOffset = window.pageXOffset;
+        var x = evt.pageX - pOffset;
+        if(pWidth/5*2 > x){
+          //goToPage('previous');
+        } else if(pWidth/5*3 < x) {
+          //goToPage('next');
         } else {
-          changeZoom(null,null,true);
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+            setTimeout(() => {
+                changeZoom('fit',null);
+                setTimeout(() => { changeZoom('fit',null); }, 20);
+            }, 5);
         }
     }
   });
@@ -2301,6 +2346,7 @@ var loadManga = function(imp) {
   });
   pageStats.numChaps = ex('numchaps');
 
+  log('nextchapter: ' + nextChapter + ' ' + ex('nextchap'));
   // do some checks on the chapter urls
   nextChapter = (nextChapter && nextChapter.trim() === location.href + '#' ? null : nextChapter);
   prevChapter = (prevChapter && prevChapter.trim() === location.href + '#' ? null : prevChapter);
