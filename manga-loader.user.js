@@ -1815,7 +1815,7 @@ var getViewer = function(prevChapter, nextChapter) {
       var target = e.target;
       UI.images.removeEventListener('click', imgClick, false);
       UI.images.style.cursor = '';
-      if(target.nodeName === 'IMG' && target.parentNode.className === 'ml-images') {
+      if(target.nodeName === 'IMG') {
         showFloatingMsg('');
         if(!target.title) {
           showFloatingMsg('Reloading "' + target.src + '"', 3000);
@@ -1901,8 +1901,9 @@ var getViewer = function(prevChapter, nextChapter) {
       // start new column
       settings += '</td><td>';
       // Keybindings
+      let keycodemap = {8:"Backspace",9:"Tab",13:"Enter",16:"Shift",16:"Shift",17:"Control",17:"Control",18:"Alt",18:"Alt",19:"Pause",20:"CapsLock",27:"Escape",32:"Space",33:"PageUp",34:"PageDown",35:"End",36:"Home",37:"ArrowLeft",38:"ArrowUp",39:"ArrowRight",40:"ArrowDown",44:"PrintScreen",45:"Insert",46:"Delete",48:"0",49:"1",50:"2",51:"3",52:"4",53:"5",54:"6",55:"7",56:"8",57:"9",65:"a",66:"b",67:"c",68:"d",69:"e",70:"f",71:"g",72:"h",73:"i",74:"j",75:"k",76:"l",77:"m",78:"n",79:"o",80:"p",81:"q",82:"r",83:"s",84:"t",85:"u",86:"v",87:"w",88:"x",89:"y",90:"z",91:"Meta",92:"Meta",93:"ContextMenu",96:"0",97:"1",98:"2",99:"3",100:"4",101:"5",102:"6",103:"7",104:"8",105:"9",106:"*",107:"+",109:"–",110:".",111:"/",112:"F1",113:"F2",114:"F3",115:"F4",116:"F5",117:"F6",118:"F7",119:"F8",120:"F9",121:"F10",122:"F11",123:"F12",144:"NumLock",145:"ScrollLock",173:"AudioVolumeMute",174:"AudioVolumeDown",175:"AudioVolumeUp",181:"LaunchMediaPlayer",182:"LaunchApplication1",183:"LaunchApplication2",186:";",187:"=",188:",",189:"–",190:".",191:"/",192:"`",219:"[",220:"\\",221:"]",222:"‘"};
       var keyTableHtml = Object.keys(UI.keys).map(function(action) {
-        return '<tr><td>' + action + '</td><td><input data-ignore="true" data-key="' + action + '" type="text" value="' + UI.keys[action] + '"></td></tr>';
+        return '<tr><td>' + action + '</td><td><input data-ignore="true" data-key="' + action + '" type="text" value="' + UI.keys[action] + ' ' + keycodemap[UI.keys[action]] + '"></td></tr>';
       }).join('');
       settings += 'Keybindings:<br><table class="ml-setting-key">' + keyTableHtml + '</table><br>';
       // Autoload
@@ -2004,15 +2005,15 @@ var getViewer = function(prevChapter, nextChapter) {
   });
   // zoom
   var lastZoom, originalZoom,newZoomPostion;
-  var changeZoom = function(action, elem) {
+  var changeZoom = function(action, elem, zoomToFit = false) {
     var ratioZoom = (document.documentElement.scrollTop || document.body.scrollTop)/(document.documentElement.scrollHeight || document.body.scrollHeight);
     var curImage = getCurrentImage();
     if(!lastZoom) {
       lastZoom = originalZoom = Math.round(curImage.clientWidth / window.innerWidth * 100);
     }
     var zoom = lastZoom;
-    if(action === '+') zoom += 5;
-    if(action === '-') zoom -= 5;
+    if(action === '+') zoom += 2;
+    if(action === '-') zoom -= 2;
     if(action === '=') {
       lastZoom = originalZoom;
       addStyle('image-width', true, '');
@@ -2021,7 +2022,12 @@ var getViewer = function(prevChapter, nextChapter) {
       window.scroll(0, newZoomPostion);
       return;
     }
-    zoom = Math.max(10, Math.min(zoom, 100));
+    if((action === '+' && zoom > 100) || zoomToFit) {
+      zoom = Math.min(window.innerHeight / curImage.offsetHeight, window.innerWidth / curImage.offsetWidth) * 100;
+      zoomToFit = true;
+    } else {
+      zoom = Math.max(10, Math.min(zoom, 100));
+    }
     lastZoom = zoom;
     addStyle('image-width', true, toStyleStr({
       width: zoom + '%'
@@ -2029,6 +2035,9 @@ var getViewer = function(prevChapter, nextChapter) {
     showFloatingMsg('zoom: ' + zoom + '%', 500);
     newZoomPostion =(document.documentElement.scrollHeight || document.body.scrollHeight)*ratioZoom;
     window.scroll(0, newZoomPostion);
+    if(zoomToFit) {
+        curImage.scrollIntoView();
+    }
   };
   var goToPage = function(toWhichPage) {
   	var curId = getCurrentImage().id;
@@ -2046,7 +2055,11 @@ var getViewer = function(prevChapter, nextChapter) {
   		log(curId + " > " + nextId);
   		log("Reached the end!");
   	} else {
-  		nextPage.scrollIntoView();
+        nextPage.scrollIntoView();
+        var verifyId = getCurrentImage().id;
+        if (curId == verifyId) {
+          nextPage.parentElement.scrollIntoView();
+        }
   	}
   }
   // keybindings
@@ -2101,9 +2114,11 @@ var getViewer = function(prevChapter, nextChapter) {
         break;
       case UI.keys.ZOOM_IN:
         changeZoom('+', UI.images);
+        evt.preventDefault();
         break;
       case UI.keys.ZOOM_OUT:
         changeZoom('-', UI.images);
+        evt.preventDefault();
         break;
       case UI.keys.RESET_ZOOM:
         changeZoom('=', UI.images);
@@ -2116,6 +2131,20 @@ var getViewer = function(prevChapter, nextChapter) {
       	break;
     }
   }, true);
+  UI.images.addEventListener('click', function(evt) {
+    if ((evt.target.nodeName === 'DIV' || evt.target.nodeName === 'IMG') && evt.button === 0) {
+        var pWidth = $(this).innerWidth();
+        var pOffset = $(this).offset();
+        var x = evt.pageX - pOffset.left;
+        if(pWidth/5*2 > x){
+          goToPage('previous');
+        } else if(pWidth/5*3 < x) {
+          goToPage('next');
+        } else {
+          changeZoom(null,null,true);
+        }
+    }
+  });
   return UI;
 };
 
@@ -2155,8 +2184,11 @@ var addImage = function(src, loc, imgNum, callback) {
   image.id = 'ml-pageid-' + imgNum;
   image.onload = callback;
   image.src = src;
-  loc.appendChild(image);
-  loc.appendChild(counter);
+  var imgwithcounter = document.createElement('div');
+  imgwithcounter.id = 'page-' + imgNum;
+  loc.appendChild(imgwithcounter);
+  imgwithcounter.appendChild(image);
+  imgwithcounter.appendChild(counter);
 };
 
 var loadManga = function(imp) {
