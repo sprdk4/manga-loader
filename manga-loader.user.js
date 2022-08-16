@@ -2011,6 +2011,9 @@ var getViewer = function(prevChapter, nextChapter) {
     if(!lastZoom) {
       lastZoom = originalZoom = Math.round(curImage.clientWidth / window.innerWidth * 100);
     }
+    if(elem !== null) {
+        curImage = elem;
+    }
     var zoom = lastZoom;
     if(action === '+') zoom += 2;
     if(action === '-') zoom -= 2;
@@ -2029,11 +2032,14 @@ var getViewer = function(prevChapter, nextChapter) {
     } else {
       zoom = Math.max(10, Math.min(zoom, 100));
     }
+    if(lastZoom != zoom) {
+      showFloatingMsg('zoom: ' + zoom + '%', 500);
+    }
     lastZoom = zoom;
     addStyle('image-width', true, toStyleStr({
       width: zoom + '%'
     }, '.ml-images img'));
-    showFloatingMsg('zoom: ' + zoom + '%', 500);
+
     newZoomPostion =(document.documentElement.scrollHeight || document.body.scrollHeight)*ratioZoom;
     window.scroll(0, newZoomPostion);
     if(zoomToFit) {
@@ -2064,14 +2070,14 @@ var getViewer = function(prevChapter, nextChapter) {
         // if currently zoom to fit window, ensure next page is also zoomed to fit to window
         if(zoomToFit) {
             setTimeout(() => {
-                changeZoom('fit',null);
+                changeZoom('fit',nextPage);
                 nextPage.scrollIntoView();
                 var verifyId = getCurrentImage().id;
                 if (curId == verifyId) {
                     nextPage.parentElement.scrollIntoView();
                 }
                 setTimeout(() => {
-                    changeZoom('fit',null);
+                    changeZoom('fit',nextPage);
                     nextPage.scrollIntoView();
                     var verifyId = getCurrentImage().id;
                     if (curId == verifyId) {
@@ -2158,10 +2164,8 @@ var getViewer = function(prevChapter, nextChapter) {
         var x = evt.pageX - pOffset;
         if(pWidth/5*2 > x){
           goToPage('previous');
-          evt.preventDefault();
         } else if(pWidth/5*3 < x) {
           goToPage('next');
-          evt.preventDefault();
         } else if(evt.detail === 1){
           changeZoom('fit',null);
           setTimeout(() => { changeZoom('fit',null); }, 20);
@@ -2187,9 +2191,12 @@ var getViewer = function(prevChapter, nextChapter) {
                 changeZoom('fit',null);
                 setTimeout(() => { changeZoom('fit',null); }, 20);
             }, 5);
+
         }
     }
   });
+  // prevent double/triple click from causing images to be selected/highlighted.
+  UI.images.addEventListener('mousedown', function(e){ e.preventDefault(); }, false);
   return UI;
 };
 
@@ -2346,7 +2353,6 @@ var loadManga = function(imp) {
   });
   pageStats.numChaps = ex('numchaps');
 
-  log('nextchapter: ' + nextChapter + ' ' + ex('nextchap'));
   // do some checks on the chapter urls
   nextChapter = (nextChapter && nextChapter.trim() === location.href + '#' ? null : nextChapter);
   prevChapter = (prevChapter && prevChapter.trim() === location.href + '#' ? null : prevChapter);
