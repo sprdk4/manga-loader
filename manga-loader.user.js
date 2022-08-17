@@ -2034,18 +2034,21 @@ var getViewer = function(prevChapter, nextChapter) {
     }
     if(lastZoom != zoom) {
       showFloatingMsg('zoom: ' + zoom + '%', 500);
-    }
-    lastZoom = zoom;
-    addStyle('image-width', true, toStyleStr({
-      width: zoom + '%'
-    }, '.ml-images img'));
 
-    newZoomPostion =(document.documentElement.scrollHeight || document.body.scrollHeight)*ratioZoom;
-    window.scroll(0, newZoomPostion);
-    if(zoomToFit) {
-        curImage.scrollIntoView();
+        lastZoom = zoom;
+        addStyle('image-width', true, toStyleStr({
+            width: zoom + '%'
+        }, '.ml-images img'));
+
+        newZoomPostion =(document.documentElement.scrollHeight || document.body.scrollHeight)*ratioZoom;
+        if(zoomToFit) {
+            curImage.scrollIntoView();
+        } else {
+            window.scroll(0, newZoomPostion);
+        }
     }
   };
+  UI.changeZoom = changeZoom;
   var goToPage = function(toWhichPage) {
   	var curId = getCurrentImage().id;
   	var nextId = curId.split('-');
@@ -2266,6 +2269,10 @@ var loadManga = function(imp) {
         updateStats();
         addImage(img, UI.images, curPage, function() {
           pagesLoaded += 1;
+          if(pagesLoaded == 1) {
+              setTimeout(() => { UI.changeZoom('fit',null); }, 5);
+              setTimeout(() => { UI.changeZoom('fit',null); }, 20);
+          }
           updateStats();
         });
         if(!next && curPage < numPages) throw new Error('failed to retrieve next url for page ' + curPage);
@@ -2376,7 +2383,6 @@ var loadManga = function(imp) {
   }
 
   addAndLoad(imgUrl, nextUrl);
-
 };
 
 var waitAndLoad = function(imp) {
