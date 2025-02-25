@@ -2423,8 +2423,10 @@ var loadManga = function(imp) {
             }
           }
 
-          if(pagesLoaded == curPage && resumeUrl){
-              loadNextPage(resumeUrl);
+          if (mLoadNum !== 'all' && resumeUrl && curPage - pagesLoaded < mLoadNum) {
+              var resumedUrl = resumeUrl
+              resumeUrl = null
+              loadNextPage(resumedUrl);
           }
         });
         if(!next && curPage < numPages) throw new Error('failed to retrieve next url for page ' + curPage);
@@ -2461,7 +2463,7 @@ var loadManga = function(imp) {
         }
       },
       loadNextPage = function(url) {
-        if (mLoadNum !== 'all' && count % mLoadNum === 0) {
+        if (mLoadNum !== 'all' && curPage - pagesLoaded >= mLoadNum) { // && count % mLoadNum === 0) {
           if (resumeUrl) {
             resumeUrl = null;
           } else {
@@ -2529,7 +2531,9 @@ var loadManga = function(imp) {
       var scrollBottom = document.body.scrollHeight - ((document.body.scrollTop || document.documentElement.scrollTop) + window.innerHeight);
       if (scrollBottom < UI.imageHeight * 2) {
         log('user scroll nearing end, loading more images starting from ' + resumeUrl);
-        loadNextPage(resumeUrl);
+        var resumedUrl = resumeUrl
+        resumeUrl = null
+        loadNextPage(resumedUrl);
       }
     }, 100));
   }
