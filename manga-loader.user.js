@@ -1893,7 +1893,7 @@ var getViewer = function(prevChapter, nextChapter) {
       var target = e.target;
       UI.images.removeEventListener('click', imgClick, false);
       UI.images.style.cursor = '';
-      if(target.nodeName === 'IMG'){// && target.parentNode.className === 'ml-images') {
+      if(target.nodeName === 'IMG') {
         showFloatingMsg('');
         if(!target.title) {
           showFloatingMsg('Translating "' + target.src + '"', 3000);
@@ -2375,6 +2375,9 @@ var addImage = function(src, loc, imgNum, callback) {
   image.id = 'ml-pageid-' + imgNum;
   image.onload = callback;
   image.src = src;
+
+  //loc.appendChild(image);
+  //loc.appendChild(counter);
   var imgwithcounter = document.createElement('div');
   imgwithcounter.id = 'page-' + imgNum;
   loc.appendChild(imgwithcounter);
@@ -2419,6 +2422,10 @@ var loadManga = function(imp) {
               if(r > 0.75) this.style.width = this.width * r + 'px';
               else this.style.width = '75%';
             }
+          }
+
+          if(pagesLoaded == curPage && resumeUrl){
+              loadNextPage(resumeUrl);
           }
         });
         if(!next && curPage < numPages) throw new Error('failed to retrieve next url for page ' + curPage);
