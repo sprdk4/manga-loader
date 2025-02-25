@@ -1643,13 +1643,15 @@ var getViewer = function(prevChapter, nextChapter) {
         'margin': '3px auto'
       }, '.ml-images img') +toStyleStr({
         'margin': '0',
-        'margin-bottom': '10px',
+        //'margin-bottom': '10px',
       }, 'body[PT="2"] .ml-images img'),
-      oddImageCss = toStyleStr({
+      oddImageCss = /*toStyleStr({
         'justify-self': 'left',
-      }, 'body[PT="2"] .ml-images img:nth-of-type(odd)') + toStyleStr({
+      }, 'body[PT="2"] .ml-images img:nth-of-type(odd)') +*/ toStyleStr({
+          'justify-self': 'left',
         'grid-column': 1
       }, 'body[PT="2"] .ml-images img:nth-of-type(odd), body[PT="2"] .ml-images div:nth-of-type(odd)') + toStyleStr({
+          'justify-self': 'right',
         'grid-column': 2
       }, 'body[PT="2"] .ml-images img:nth-of-type(even), body[PT="2"] .ml-images div:nth-of-type(even)'),
       counterCss = toStyleStr({
@@ -1659,7 +1661,8 @@ var getViewer = function(prevChapter, nextChapter) {
         'width': '30px',
         'margin-left': 'auto',
         'margin-right': 'auto',
-        'margin-top': '-12px',
+        'margin-top': '-2px',
+        //'margin-top': '-12px',
         'padding-left': '5px',
         'padding-right': '5px',
         'border': '1px solid white',
@@ -1893,7 +1896,7 @@ var getViewer = function(prevChapter, nextChapter) {
       var target = e.target;
       UI.images.removeEventListener('click', imgClick, false);
       UI.images.style.cursor = '';
-      if(target.nodeName === 'IMG') {
+      if(target.nodeName === 'IMG' && target.parentNode.className === 'ml-images') {
         showFloatingMsg('');
         if(!target.title) {
           showFloatingMsg('Translating "' + target.src + '"', 3000);
@@ -1920,7 +1923,7 @@ var getViewer = function(prevChapter, nextChapter) {
       var target = e.target;
       UI.images.removeEventListener('click', imgClick, false);
       UI.images.style.cursor = '';
-      if(target.nodeName === 'IMG') {
+      if(target.nodeName === 'IMG' && target.parentNode.className === 'ml-images') {
         showFloatingMsg('');
         if(!target.title) {
           showFloatingMsg('Reloading "' + target.src + '"', 3000);
@@ -2376,13 +2379,8 @@ var addImage = function(src, loc, imgNum, callback) {
   image.onload = callback;
   image.src = src;
 
-  //loc.appendChild(image);
-  //loc.appendChild(counter);
-  var imgwithcounter = document.createElement('div');
-  imgwithcounter.id = 'page-' + imgNum;
-  loc.appendChild(imgwithcounter);
-  imgwithcounter.appendChild(image);
-  imgwithcounter.appendChild(counter);
+  loc.appendChild(image);
+  loc.appendChild(counter);
 };
 
 var loadManga = function(imp) {
