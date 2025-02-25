@@ -2346,7 +2346,18 @@ var getCounter = function(imgNum) {
 var addImage = function(src, loc, imgNum, callback) {
   var image = new Image(),
       counter = getCounter(imgNum);
+  image.retries = 0;
   image.onerror = function() {
+    image.retries++;
+    if (image.retries > 1) {
+      if (image.retries > 5) {
+        renewsrc(image).then( _ => { image.src = image.realsrc; });
+        image.retries = 0;
+        return;
+      }
+      image.onclick();
+      return;
+    }
     log('failed to load ' + src);
     image.onload = null;
     image.style.backgroundColor = 'white';
@@ -2359,6 +2370,7 @@ var addImage = function(src, loc, imgNum, callback) {
       image.style.cursor = '';
       image.src = src;
     };
+    image.onclick();
   };
   image.id = 'ml-pageid-' + imgNum;
   image.onload = callback;
