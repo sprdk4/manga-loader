@@ -1618,6 +1618,7 @@ var createButton = function(text, action, styleStr) {
   return button;
 };
 
+var pgType = storeGet('ml-setting-page-type') || 'single';
 var getViewer = function(prevChapter, nextChapter) {
   var viewerCss = toStyleStr({
     'background-color': 'black !important',
@@ -1628,12 +1629,27 @@ var getViewer = function(prevChapter, nextChapter) {
         'margin-top': '10px',
         'margin-bottom': '10px',
         'transform-origin': 'top center'
-      }, '.ml-images'),
+      }, '.ml-images') + toStyleStr({
+        'direction': 'rtl',
+        'display': 'inline-grid',
+        'grid-template-columns': '1fr 1fr',
+        'grid-auto-flow': 'column'
+      }, 'body[PT="2"] .ml-images'),
       imageCss = toStyleStr({
         'max-width': '100%',
         'display': 'block',
         'margin': '3px auto'
-      }, '.ml-images img'),
+      }, '.ml-images img') +toStyleStr({
+        'margin': '0',
+        'margin-bottom': '10px',
+      }, 'body[PT="2"] .ml-images img'),
+      oddImageCss = toStyleStr({
+        'justify-self': 'left',
+      }, 'body[PT="2"] .ml-images img:nth-of-type(odd)') + toStyleStr({
+        'grid-column': 1
+      }, 'body[PT="2"] .ml-images img:nth-of-type(odd), body[PT="2"] .ml-images div:nth-of-type(odd)') + toStyleStr({
+        'grid-column': 2
+      }, 'body[PT="2"] .ml-images img:nth-of-type(even), body[PT="2"] .ml-images div:nth-of-type(even)'),
       counterCss = toStyleStr({
         'background-color': '#222',
         'color': 'white',
@@ -1704,7 +1720,7 @@ var getViewer = function(prevChapter, nextChapter) {
       }, '.ml-setting-autoload');
   // clear all styles and scripts
   var title = document.title;
-  document.head.innerHTML = '<meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/font-awesome/4.3.0/css/font-awesome.min.css">';
+  document.head.innerHTML = '<meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">';
   document.title = title;
   document.body.className = '';
   document.body.style = '';
@@ -1719,11 +1735,12 @@ var getViewer = function(prevChapter, nextChapter) {
       '<i class="fa fa-info ml-button ml-info-button" title="See userscript information and help"></i> ' +
       '<i class="fa fa-bar-chart ml-button ml-more-stats-button" title="See page stats"></i> ' +
       '<i class="fa fa-cog ml-button ml-settings-button" title="Adjust userscript settings"></i> ' +
-      '<i class="fa fa-refresh ml-button ml-manual-reload" title="Manually refresh next clicked image."></i></span></div>';
+      '<i class="fa fa-refresh ml-button ml-manual-reload" title="Manually refresh next clicked image."></i> ' +
+      '<i class="fa ml-button ml-page-type" title="Dou/Sin"></i></span></div>';
   // combine ui elements
   document.body.innerHTML = nav + '<div class="ml-images"></div>' + nav + floatingMsg + stats;
   // add main styles
-  addStyle('main', true, viewerCss, imagesCss, imageCss, counterCss, navCss, navHoverCss, statsCss, statsCollapseCss, statsHoverCss, boxCss, floatingMsgCss, buttonCss, keySettingCss, autoloadSettingCss, floatingMsgAnchorCss);
+  addStyle('main', true, viewerCss, imagesCss, imageCss, oddImageCss, counterCss, navCss, navHoverCss, statsCss, statsCollapseCss, statsHoverCss, boxCss, floatingMsgCss, buttonCss, keySettingCss, autoloadSettingCss, floatingMsgAnchorCss);
   // add user styles
   var userCss = storeGet('ml-setting-css-profiles');
   var curProf = storeGet('ml-setting-css-current') || 'Default';
@@ -1744,11 +1761,37 @@ var getViewer = function(prevChapter, nextChapter) {
     btnPrevChap: getEl('.ml-chap-prev'),
     btnExit: getEl('.ml-exit'),
     btnSettings: getEl('.ml-settings-button'),
+    btnPageType: getEl('.ml-page-type'),
     isTyping: false,
     ignore: false,
     moreStats: false,
     currentProfile: storeGet('ml-setting-css-current') || ''
   };
+  var setPT = function () {
+    let curP = getCurrentImage();
+    switch (pgType) {
+      case 'single':
+        document.body.setAttribute('PT', 1);
+        UI.btnPageType.classList.remove('fa-square-full');
+        UI.btnPageType.classList.add('fa-grip-vertical');
+        [...UI.images.getElementsByTagName('img')].forEach(x => x.style.width = null)
+        break;
+      case 'double':
+        document.body.setAttribute('PT', 2);
+        UI.btnPageType.classList.remove('fa-grip-vertical');
+        UI.btnPageType.classList.add('fa-square-full');
+        [...UI.images.getElementsByTagName('img')]?.forEach(x => {
+          let r = window.innerHeight / x.height;
+          if(r < 1){
+            if(r > 0.75) x.style.width = x.width * r + 'px';
+            else x.style.width = '75%';
+          }
+        })
+        break;
+    }
+    curP?.scrollIntoView();
+  };
+  setPT();
   // message func
   var messageId = null;
   var showFloatingMsg = function(msg, timeout, html) {
@@ -1820,6 +1863,10 @@ var getViewer = function(prevChapter, nextChapter) {
         if(!target.title) {
           showFloatingMsg('Reloading "' + target.src + '"', 3000);
           if(target.complete) target.onload = null;
+          if(target.realsrc) {
+            target.src = target.realsrc;
+            target.realsrc = null;
+          }
           target.src = target.src + (target.src.indexOf('?') !== -1 ? '&' : '?') + new Date().getTime();
         }
       } else {
@@ -2003,6 +2050,17 @@ var getViewer = function(prevChapter, nextChapter) {
       };
     }
   });
+  UI.btnPageType.addEventListener('click', function(evt) {
+    switch (pgType) {
+      case 'single':
+        storeSet('ml-setting-page-type', pgType = 'double');
+        break;
+      case 'double':
+        storeSet('ml-setting-page-type', pgType = 'single');
+        break;
+    };
+    setPT();
+  });
   // zoom
   var lastZoom, originalZoom,newZoomPostion, zoomToFit = false;
   var changeZoom = function(action, elem) {
@@ -2027,7 +2085,7 @@ var getViewer = function(prevChapter, nextChapter) {
     }
     zoomToFit = false;
     if(action === 'fit') {
-      zoom = lastZoom/100.0 * Math.min(window.innerHeight / curImage.scrollHeight, window.innerWidth / curImage.scrollWidth) * 100;
+      zoom = lastZoom/100.0 * Math.min(window.innerHeight / curImage.scrollHeight, window.innerWidth / curImage.scrollWidth / ( pgType == 'single' ? 1 : 2 )) * 100;
       zoomToFit = true;
     } else {
       zoom = Math.max(10, Math.min(zoom, 100));
@@ -2054,7 +2112,7 @@ var getViewer = function(prevChapter, nextChapter) {
   	var nextId = curId.split('-');
   	switch (toWhichPage) {
   		case 'next':
-  			nextId[2] = parseInt(nextId[2]) + 1;
+  			nextId[2] = parseInt(nextId[2]) + ( pgType == 'single' ? 1 : 2 );
   			break;
   		case 'previous':
   			nextId[2] = parseInt(nextId[2]) - 1;
@@ -2267,6 +2325,7 @@ var loadManga = function(imp) {
       addAndLoad = function(img, next) {
         if(!img) throw new Error('failed to retrieve img for page ' + curPage);
         updateStats();
+        let url = xhr.responseURL;
         addImage(img, UI.images, curPage, function() {
           pagesLoaded += 1;
           if(pagesLoaded == 1) {
@@ -2274,6 +2333,15 @@ var loadManga = function(imp) {
               setTimeout(() => { UI.changeZoom('fit',null); }, 20);
           }
           updateStats();
+
+          if (!imp.pages) this.url = url || document.location.toString();
+          if(pgType == "double"){
+            let r = window.innerHeight / this.height;
+            if(r < 1){
+              if(r > 0.75) this.style.width = this.width * r + 'px';
+              else this.style.width = '75%';
+            }
+          }
         });
         if(!next && curPage < numPages) throw new Error('failed to retrieve next url for page ' + curPage);
         loadNextPage(next);
@@ -2411,6 +2479,7 @@ var waitAndLoad = function(imp) {
 var MLoaderLoadImps = function(imps) {
   var success = imps.some(function(imp) {
     if (imp.match && (new RegExp(imp.match, 'i')).test(pageUrl)) {
+      currentImp = imp;
       currentImpName = imp.name;
       if (W.BM_MODE || (autoload !== 'no' && (mAutoload || autoload))) {
         log('autoloading...');
@@ -2450,7 +2519,7 @@ var pageUrl = window.location.href,
       'margin': '0 10px 10px 0',
       'z-index': '9999999999'
     }),
-    currentImpName, btnLoad;
+    currentImp, currentImpName, btnLoad;
 
 // indicates whether UI loaded
 var isLoaded = false;
