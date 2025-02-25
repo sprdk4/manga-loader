@@ -1645,15 +1645,13 @@ var getViewer = function(prevChapter, nextChapter) {
         'margin': '0',
         //'margin-bottom': '10px',
       }, 'body[PT="2"] .ml-images img'),
-      oddImageCss = /*toStyleStr({
-        'justify-self': 'left',
-      }, 'body[PT="2"] .ml-images img:nth-of-type(odd)') +*/ toStyleStr({
+      oddImageCss = toStyleStr({
           'justify-self': 'left',
         'grid-column': 1
-      }, 'body[PT="2"] .ml-images img:nth-of-type(odd), body[PT="2"] .ml-images div:nth-of-type(odd)') + toStyleStr({
+      }, 'body[PT="2"] .ml-images div:nth-of-type(odd) img, body[PT="2"] .ml-images div:nth-of-type(odd)') + toStyleStr({
           'justify-self': 'right',
         'grid-column': 2
-      }, 'body[PT="2"] .ml-images img:nth-of-type(even), body[PT="2"] .ml-images div:nth-of-type(even)'),
+      }, 'body[PT="2"] .ml-images div:nth-of-type(even) img, body[PT="2"] .ml-images div:nth-of-type(even)'),
       counterCss = toStyleStr({
         'background-color': '#222',
         'color': 'white',
@@ -1896,7 +1894,7 @@ var getViewer = function(prevChapter, nextChapter) {
       var target = e.target;
       UI.images.removeEventListener('click', imgClick, false);
       UI.images.style.cursor = '';
-      if(target.nodeName === 'IMG' && target.parentNode.className === 'ml-images') {
+      if(target.nodeName === 'IMG') {
         showFloatingMsg('');
         if(!target.title) {
           showFloatingMsg('Translating "' + target.src + '"', 3000);
@@ -1923,7 +1921,7 @@ var getViewer = function(prevChapter, nextChapter) {
       var target = e.target;
       UI.images.removeEventListener('click', imgClick, false);
       UI.images.style.cursor = '';
-      if(target.nodeName === 'IMG' && target.parentNode.className === 'ml-images') {
+      if(target.nodeName === 'IMG') {
         showFloatingMsg('');
         if(!target.title) {
           showFloatingMsg('Reloading "' + target.src + '"', 3000);
@@ -2379,8 +2377,11 @@ var addImage = function(src, loc, imgNum, callback) {
   image.onload = callback;
   image.src = src;
 
-  loc.appendChild(image);
-  loc.appendChild(counter);
+  var imgwithcounter = document.createElement('div');
+  imgwithcounter.id = 'page-' + imgNum;
+  loc.appendChild(imgwithcounter);
+  imgwithcounter.appendChild(image);
+  imgwithcounter.appendChild(counter);
 };
 
 var loadManga = function(imp) {
